@@ -9,7 +9,7 @@
  *  communication with the Technosoft motor controllers.
  */
 
-#include <Reel.h>
+#include "Reel.h"
 
 Reel::Reel(uint8_t expeditor_axis) : Technosoft(REEL_AXIS, expeditor_axis) {
 	// keep emergency stop off to start

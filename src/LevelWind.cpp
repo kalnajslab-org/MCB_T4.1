@@ -9,7 +9,7 @@
  *  implements communication with the Technosoft motor controllers.
  */
 
-#include <LevelWind.h>
+#include "LevelWind.h"
 
 LevelWind::LevelWind(uint8_t expeditor_axis) : Technosoft(LEVEL_WIND_AXIS, expeditor_axis) { }
 
