@@ -8,9 +8,9 @@
  *  the motor control board (MCB) for FLOATS and RACHuTS on
  *  the Strateole 2 flights.
  */
-#include <HardwareMCB.h>
-#include <MCB.h>
-#include <ConfigManagerMCB.h>
+#include "src/HardwareMCB.h"
+#include "src/MCB.h"
+#include "src/ConfigManagerMCB.h"
 #include <TimerOne.h>
 
 #define TIMER_COUNTER_MAX   10 // loop_rate = 10 / TIMER_COUNTER_MAX Hz
