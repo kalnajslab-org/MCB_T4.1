@@ -36,7 +36,11 @@ void MCB::Startup()
 	// Serial setup
 	DEBUG_SERIAL.begin(115200);
 	DIB_SERIAL.begin(115200);
-	DEBUG_SERIAL.println("Initialize serial");
+
+    DEBUG_SERIAL.print("MCB build ");
+    DEBUG_SERIAL.print(__DATE__);
+    DEBUG_SERIAL.print(" ");
+    DEBUG_SERIAL.println(__TIME__);
 
 	
 
