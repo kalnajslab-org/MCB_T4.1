@@ -8,6 +8,12 @@
  *  the motor control board (MCB) for FLOATS and RACHuTS on
  *  the Strateole 2 flights.
  */
+
+// Note that _INST_RATS, INST_FLOATS, or INST_RACHUTS must be defined. 
+// Typically this will be done via a compile define in a PlatformIO build environment. 
+// If using the Arduino IDE, define it in the src/HardwareMCB.h file.
+// BUT DON'T FORGET TO COMMENT IT OUT BEFORE COMMITTING TO THE REPO.
+
 #include "src/HardwareMCB.h"
 #include "src/MCB.h"
 #include "src/ConfigManagerMCB.h"
