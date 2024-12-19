@@ -87,19 +87,16 @@ bool StorageManagerMCB::StartSD(uint32_t boot_num) {
 
 	if (!sd_state) {
 		if (!SD.begin(BUILTIN_SDCARD)) {
-			Serial.println("Unable to start SD card");
+			Serial.println("ERR: Unable to start SD card");
 			sd_state = false;
 		} else {
-			Serial.println("Successfully started SD card");
 			sd_state = true;
 		}
 	}
 
 	if (sd_state) {
-		if (ConfigureDirectories()) {
-			Serial.println("Created base directory for boot");
-		} else {
-			Serial.println("Error creating base directory");
+		if (!ConfigureDirectories()) {
+			Serial.println("ERR: Error configuring directories");
 			sd_state = false;
 		}
 	}
@@ -109,7 +106,6 @@ bool StorageManagerMCB::StartSD(uint32_t boot_num) {
 
 bool StorageManagerMCB::ConfigureDirectories(void) {
 	if (!SD.exists(LOG_DATA_DIR)) {
-		Serial.println("Making log data directory");
 		if (!SD.mkdir(LOG_DATA_DIR)) {
 			Serial.println("ERR: unable to make log data directory");
 			return false;
@@ -117,16 +113,26 @@ bool StorageManagerMCB::ConfigureDirectories(void) {
 	}
 
 	if (!SD.exists(FSW_DIR)) {
-		Serial.println("Making FSW directory");
 		if (!SD.mkdir(FSW_DIR)) {
 			Serial.println("ERR: unable to make FSW directory");
 			return false;
 		}
 	}
 
+    bool success = true;
 	base_directory = LOG_DATA_DIR "boot";
 	base_directory += String(boot_number);
-	return SD.mkdir(base_directory.c_str());
+    if (!SD.exists(base_directory.c_str())) {
+        success = SD.mkdir(base_directory.c_str());
+        if (!success) {
+            Serial.print("ERR: unable to make base directory: ");
+            Serial.println(base_directory);
+        }
+    } else {
+        Serial.print("WARN: Base directory already exists: ");
+        Serial.println(base_directory);
+    }
+	return success;
 }
 
 bool StorageManagerMCB::CheckSD(void) {

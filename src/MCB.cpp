@@ -55,14 +55,19 @@ void MCB::Startup()
     DEBUG_SERIAL.print(" ");
     DEBUG_SERIAL.println(__TIME__);
 
-
-	// Non-volatile storage setup (EEPROM then SD)
-	if (!configManager.Initialize()) dibDriver.dibComm.TX_Error("MCB error initializing EEPROM! Reconfigured");
-	DEBUG_SERIAL.println("Initialize config manager");
-
-	if (!storageManager.StartSD(configManager.boot_count.Read())) dibDriver.dibComm.TX_Error("MCB error starting SD card!");
-	DEBUG_SERIAL.println("Initialize SD");
-
+	// Non-volatile storage setup 
+    //    EEPROM:
+	if (!configManager.Initialize()) {
+        dibDriver.dibComm.TX_Error("MCB error initializing EEPROM! Reconfigured");
+    } else {
+	    DEBUG_SERIAL.println("Config manager init successful");
+    }
+    //    SD:
+	if (!storageManager.StartSD(configManager.boot_count.Read())) {
+        dibDriver.dibComm.TX_Error("MCB error starting SD card!");
+    } else {
+	    DEBUG_SERIAL.println("SD card startup successful");
+    }
 
 	// Set up limit monitor
 	limitMonitor.InitializeSensors();
