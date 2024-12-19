@@ -19,6 +19,9 @@
 
 // Note that _INST_RATS, INST_FLOATS, or INST_RACHUTS must be defined. 
 // Typically this will be done via a compile define in a PlatformIO build environment. 
+// Define it in this header file if using the Arduino IDE. 
+// BUT DON'T FORGET TO COMMENT IT OUT BEFORE COMMITTING TO THE REPO.
+//#define INST_RATS
 
 //Updated for T4.1
 // Pin definitions
