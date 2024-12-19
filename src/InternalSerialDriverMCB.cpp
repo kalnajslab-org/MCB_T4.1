@@ -22,7 +22,6 @@ void InternalSerialDriverMCB::RunDriver(void)
 
 	while (rx_msg != NO_MESSAGE) {
 		if (rx_msg == ASCII_MESSAGE) {
-            Serial.println("we got rats msg");
 			HandleASCII();
 		} else {
 			storageManager.LogSD("Unimplemented message type from DIB", ERR_DATA);
@@ -47,7 +46,6 @@ void InternalSerialDriverMCB::RunDebugDriver(void)
 	} else {
 		rx_msg = dibComm.RX();
 		while (rx_msg != NO_MESSAGE) {
-            DEBUG_SERIAL.print("got msg "); DEBUG_SERIAL.println(rx_msg);
 			if (rx_msg == ASCII_MESSAGE) {
 				HandleASCII();
 			}
