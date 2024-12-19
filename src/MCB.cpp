@@ -6,6 +6,16 @@
  * Updated for T4.1 by LEK 7/2024
  */
 
+#ifdef INST_FLOATS
+#define INST_NAME "FLOATS"
+#endif
+#ifdef INST_RACHUTS
+#define INST_NAME "RACHuTS"
+#endif
+#ifdef INST_RATS
+#define INST_NAME "RATS"
+#endif
+
 #include "MCB.h"
 WDT_T4<WDT1> wdt;  // Use Watchdog Timer1 on Teensy 4.1
 
@@ -37,12 +47,13 @@ void MCB::Startup()
 	DEBUG_SERIAL.begin(115200);
 	DIB_SERIAL.begin(115200);
 
-    DEBUG_SERIAL.print("MCB build ");
+    DEBUG_SERIAL.print("MCB build for ");
+    DEBUG_SERIAL.print(INST_NAME);
+    DEBUG_SERIAL.print(" ");
     DEBUG_SERIAL.print(__DATE__);
     DEBUG_SERIAL.print(" ");
     DEBUG_SERIAL.println(__TIME__);
 
-	
 
 	// Non-volatile storage setup (EEPROM then SD)
 	if (!configManager.Initialize()) dibDriver.dibComm.TX_Error("MCB error initializing EEPROM! Reconfigured");
@@ -60,16 +71,6 @@ void MCB::Startup()
 
 	// Display startup info
 	PrintBootInfo();
-
-#ifdef INST_FLOATS
-	DEBUG_SERIAL.println("Instrument: FLOATS");
-#endif
-#ifdef INST_RACHUTS
-	DEBUG_SERIAL.println("Instrument: RACHuTS");
-#endif
-#ifdef INST_RATS
-	DEBUG_SERIAL.println("Instrument: RATS");
-#endif
 
 	// TTL/RS-232 transceiver setup
 	//pinMode(FORCEON_PIN, OUTPUT);
