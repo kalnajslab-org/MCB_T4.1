@@ -15,6 +15,14 @@
 #ifndef MCB_H_
 #define MCB_H_
 
+#ifndef INST_RATS
+    #ifndef INST_RATS
+        #ifndef INST_RATS
+            #error "One of INST_RATS, INST_RACHUTS, or INST_FLOATS must be defined in the build environment"
+        #endif
+    #endif
+#endif
+
 //#include "MCBBufferGuard.h"
 #include "InternalSerialDriverMCB.h"
 //#include "LTC2983Manager.h"

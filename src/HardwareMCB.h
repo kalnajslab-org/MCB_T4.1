@@ -17,9 +17,8 @@
 
 #include <stdint.h>
 
-// Which instrument?
-//#define INST_RACHUTS
-#define INST_FLOATS
+// Note that _INST_RATS, INST_FLOATS, or INST_RACHUTS must be defined. 
+// Typically this will be done via a compile define in a PlatformIO build environment. 
 
 //Updated for T4.1
 // Pin definitions

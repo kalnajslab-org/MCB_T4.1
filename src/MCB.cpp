@@ -67,6 +67,9 @@ void MCB::Startup()
 #ifdef INST_RACHUTS
 	DEBUG_SERIAL.println("Instrument: RACHuTS");
 #endif
+#ifdef INST_RATS
+	DEBUG_SERIAL.println("Instrument: RATS");
+#endif
 
 	// TTL/RS-232 transceiver setup
 	//pinMode(FORCEON_PIN, OUTPUT);

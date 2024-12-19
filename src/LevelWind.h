@@ -34,7 +34,7 @@
 #define LW_SPEED_CONV		(LW_MM_PER_ROT*LW_MM_PER_SEC*RPM_PER_SEC) // multiply by reel speed to get LW speed
 
 /// Level wind addresses for MCB-SOLO configuration FLight_System_V6_RACHuTS_EmCamVariable
-//#ifdef INST_RACHUTS // defined in HardwareMCB.h
+//#ifdef INST_RACHUTS 
 //#define STOP_PROFILE_LW		0x4025
 //#define WIND_OUT_LW			0x4028
 //#define WIND_IN_LW			0x404C
@@ -43,7 +43,7 @@
 //#endif
 
 // From RACHuTS_v6_EmCamVariable_Mondo
-#ifdef INST_RACHUTS // defined in HardwareMCB.h
+#ifdef INST_RACHUTS 
 #define STOP_PROFILE_LW		0x4022
 #define WIND_OUT_LW			0x4025
 #define WIND_IN_LW			0x4049
@@ -52,7 +52,7 @@
 #endif
 
 //From MCB on Dougs git Hub 8_2021
-// #ifdef INST_RACHUTS // defined in HardwareMCB.h
+// #ifdef INST_RACHUTS 
 // #define STOP_PROFILE_LW		0x4022
 // #define WIND_OUT_LW			0x4025
 // #define WIND_IN_LW			0x4050
@@ -61,7 +61,7 @@
 // #endif
 
 //////Level wind addresses for old EBOX system (non-mondo)
-//#ifdef INST_FLOATS // defined in HardwareMCB.h
+//#ifdef INST_FLOATS 
 //#define STOP_PROFILE_LW		0x4025
 //#define WIND_OUT_LW			0x4028
 //#define WIND_IN_LW			0x404C
@@ -70,7 +70,16 @@
 //#endif
 
 //Level wind addresses for MONDO
-#ifdef INST_FLOATS // defined in HardwareMCB.h
+#ifdef INST_FLOATS 
+#define STOP_PROFILE_LW		0x4022
+#define WIND_OUT_LW			0x4025
+#define WIND_IN_LW			0x4050
+#define SET_CENTER_LW		0x4067
+#define HOME_LW				0x407D
+#endif
+
+//Level wind addresses for RATS
+#ifdef INST_RATS 
 #define STOP_PROFILE_LW		0x4022
 #define WIND_OUT_LW			0x4025
 #define WIND_IN_LW			0x4050
