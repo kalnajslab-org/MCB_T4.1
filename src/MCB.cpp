@@ -6,6 +6,8 @@
  * Updated for T4.1 by LEK 7/2024
  */
 
+#include "MCB.h"
+
 #ifdef INST_FLOATS
 #define INST_NAME "FLOATS"
 #endif
@@ -16,7 +18,6 @@
 #define INST_NAME "RATS"
 #endif
 
-#include "MCB.h"
 WDT_T4<WDT1> wdt;  // Use Watchdog Timer1 on Teensy 4.1
 
 // --------------------------------------------------------
