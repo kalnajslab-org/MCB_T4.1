@@ -112,7 +112,6 @@ void InternalSerialDriverMCB::HandleASCII(void)
 		state_queue->Push(ACT_USE_LIMITS);
 		break;
 	case MCB_GET_EEPROM:
-		dibComm.TX_Ack(MCB_GET_EEPROM, true);
 		state_queue->Push(ACT_SEND_EEPROM);
 		break;
 	// messages that have parameters to parse -------------
