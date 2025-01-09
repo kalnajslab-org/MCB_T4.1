@@ -264,8 +264,8 @@ void MCB::ReelIn()
 				ReelControllerOff();
 			}
 		 	else {
-			//ReelControllerOff();
-			//LevelWindControllerOff();
+			ReelControllerOff();
+			LevelWindControllerOff();
 			//Serial.println("Controller Commanded to Power off");
 			action_queue.Push(ACT_SWITCH_READY);
 			}
