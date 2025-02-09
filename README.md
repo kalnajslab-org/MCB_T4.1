@@ -89,6 +89,9 @@ The reel and the level wind both use [Technosoft motion controllers](https://tec
 
 There is also software implemented on each of the controllers using the [Technosoft Motion Language (TML)](https://www.technosoftmotion.com/ESM-um-html/index.html?help_tml_basic_concepts.htm). The software is implemented as functions that are callable by the MCB over serial, and can be found in the `Technosoft_Projects` directory. The projects are Technosoft archives that can be opened in Technosoft's EasyMotion Studio program using `Project -> Restore...`. There are currently two RACHuTS versions:
 
+Here is a quick link to the [Technosoft fault status codes](https://www.technosoftmotion.com/ESM-um-html/index.html?tml_faultstatus.htm).
+
+### Deployed Versions
 * `Flight_System_V3_RACHUTS.m.zip`: was flown during the engineering test flight, but is no longer supported
 * `Flight_System_V6_RACHUTS_EmCamVariable.m.zip`: updates the flight version to perform "emulated camming" instead of using Technosoft's software camming feature
 
