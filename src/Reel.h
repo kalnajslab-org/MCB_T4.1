@@ -31,12 +31,13 @@
 
 // conversion factors that depend on the instrument
 #ifdef INST_RACHUTS 
-#define REEL_UNITS_PER_REV	24000.0
-#define SPEED_CONVERSION	0.32
+//#ifdef INST_RATS
+#define REEL_UNITS_PER_REV	12276.0
+#define SPEED_CONVERSION	0.16
 #define DEFAULT_FULL_SPEED	250.0	// rpm
 #define DEFAULT_DOCK_SPEED	80.0	// rpm
-#define ACC_CONVERSION		0.01537
-#define DEFAULT_ACC			8.0		// rot/s^2
+#define ACC_CONVERSION		0.007
+#define DEFAULT_ACC			4.0		// rot/s^2
 #define MAX_ACC				8.2		// rot/s^2
 #define MAX_SPEED			400.0 	// rpm
 #endif

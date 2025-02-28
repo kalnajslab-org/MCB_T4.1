@@ -31,12 +31,13 @@ PowerControllerMCB::PowerControllerMCB()
 void PowerControllerMCB::ReelOn()
 {
 	digitalWrite(MC_ENABLE_PIN, HIGH);
-	delay(100);
+	delay(10);
 	digitalWrite(MC1_ENABLE_PIN, HIGH);
-	delay(100);
+	delay(10);
 	digitalWrite(MTR1_ENABLE_PIN, HIGH);
-	delay(100);
+	delay(10);
 	digitalWrite(BRAKE_ENABLE_PIN, HIGH);
+	delay(1000);
 }
 
 void PowerControllerMCB::ReelOff()
