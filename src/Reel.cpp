@@ -78,9 +78,15 @@ bool Reel::ReelIn(float num_revolutions, float speed, float acc) {
 	uint32_t fixed_speed = 0;
 	uint32_t fixed_acc = 0;
 
-	if (num_revolutions > MAX_REVOLUTIONS || num_revolutions <= 0.0) { return false; }
-	if (speed > MAX_SPEED || speed <= 0.0) { return false; }
-	if (acc > MAX_ACC || acc <= 0.0) { return false; }
+	if (num_revolutions > MAX_REVOLUTIONS || num_revolutions <= 0.0) { 
+		Serial.println("Revolutions Wrong");
+		return false; }
+	if (speed > MAX_SPEED || speed <= 0.0) { 
+		Serial.println("Speed Wrong");
+		return false; }
+	if (acc > MAX_ACC || acc <= 0.0) { 
+		Serial.println("Acc Wrong");
+		return false; }
 
 	// implicit cast to uint32 for serialization
 	num_units = num_revolutions * REEL_UNITS_PER_REV;
@@ -93,9 +99,15 @@ bool Reel::ReelIn(float num_revolutions, float speed, float acc) {
 	fixed_speed = Float_To_Fixed(speed);
 	fixed_acc = Float_To_Fixed(acc);
 
-	if (!SetCommandPosition(num_units)) { return false; }
-	if (!SetSlewRate(fixed_speed)) { return false; }
-	if (!SetAcceleration(fixed_acc)) { return false; }
+	if (!SetCommandPosition(num_units)) { 
+		Serial.println("SetCommandPosition Wrong");
+		return false; }
+	if (!SetSlewRate(fixed_speed)) { 
+		Serial.println("SetSlewRate Wrong");
+		return false; }
+	if (!SetAcceleration(fixed_acc)) { 
+		Serial.println("SetAcceleration Wrong");
+		return false; }
 
 	return CallFunction(REEL_VARIABLE_R);
 }
