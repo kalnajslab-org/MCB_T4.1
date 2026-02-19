@@ -54,7 +54,7 @@
 #endif
 
 #ifdef INST_RATS 
-#define REEL_UNITS_PER_REV	344.0
+#define REEL_UNITS_PER_REV	1660.0
 #define SPEED_CONVERSION	0.00459 // iu/rpm
 #define DEFAULT_FULL_SPEED	20.0	// rpm
 #define DEFAULT_DOCK_SPEED	20.0	// rpm
