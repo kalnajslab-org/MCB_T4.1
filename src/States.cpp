@@ -43,6 +43,12 @@ enum MCBSubstates_t : uint8_t{
 	// Home LW
 	HOME_START_MOTION,
 	HOME_MONITOR,
+
+	// Center LW
+	CENTER_START_HOME,
+	CENTER_HOME_MONITOR,
+	CENTER_START_MOTION,
+	CENTER_MONITOR,
 };
 
 // --------------------------------------------------------
@@ -520,6 +526,94 @@ void MCB::HomeLW()
 
 	default:
 		storageManager.LogSD("Unknown home lw substate", ERR_DATA);
+		action_queue.Push(ACT_SWITCH_NOMINAL);
+		break;
+	}
+}
+
+
+void MCB::CenterLW()
+{
+	static uint32_t timing_variable = 0;
+
+	switch (substate) {
+	case STATE_ENTRY:
+		Serial.println("Entering center lw");
+
+		if (!limitMonitor.VerifyDeployVoltage()) {
+			dibDriver.dibComm.TX_Error("Voltage too low to center LW!");
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			return;
+		}
+
+		if (!ReelControllerOn() || !LevelWindControllerOn()) {
+			dibDriver.dibComm.TX_Error("Error powering controllers on for LW center");
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			return;
+		}
+
+		if (camming) {
+			reel.CamStop();
+			camming = false;
+		}
+
+		substate = CENTER_START_HOME;
+		break;
+
+	case CENTER_START_HOME:
+		if (!levelWind.Home()) {
+			dibDriver.dibComm.TX_Error("Error homing LW for center");
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			return;
+		}
+
+		timing_variable = millis() + LW_HOME_MILLIS;
+		lw_docked = false;
+		substate = CENTER_HOME_MONITOR;
+		break;
+
+	case CENTER_HOME_MONITOR:
+		CheckLevelWind();
+
+		if (millis() > timing_variable) {
+			homed = true;
+			substate = CENTER_START_MOTION;
+		}
+
+		break;
+
+	case CENTER_START_MOTION:
+		if (!levelWind.SetCenter()) {
+			dibDriver.dibComm.TX_Error("Error centering LW");
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			return;
+		}
+
+		timing_variable = millis() + LW_CENTER_MILLIS;
+		substate = CENTER_MONITOR;
+		break;
+
+	case CENTER_MONITOR:
+		if (CheckLevelWind()) {
+			lw_docked = true;
+			action_queue.Push(ACT_SWITCH_READY);
+		} else if (millis() > timing_variable) {
+			dibDriver.dibComm.TX_Error("LW center motion timed out");
+			action_queue.Push(ACT_SWITCH_READY);
+		}
+
+		break;
+
+	case STATE_EXIT:
+		
+		ReelControllerOff();
+		LevelWindControllerOff();
+		Serial.println("Exiting center lw");
+		levelWind.StopProfile();
+		break;
+
+	default:
+		storageManager.LogSD("Unknown center lw substate", ERR_DATA);
 		action_queue.Push(ACT_SWITCH_NOMINAL);
 		break;
 	}
