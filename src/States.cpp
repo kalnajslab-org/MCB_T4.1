@@ -214,7 +214,8 @@ void MCB::ReelIn()
 
 	case REEL_IN_START_CAM:
 		homed = false;
-
+		lw_docked = false;
+		
 		if (!levelWind.WindOut(dibDriver.mcbParameters.retract_velocity)) { // will home
 			reel.StopProfile();
 			dibDriver.dibComm.TX_Error("Error starting camming");
@@ -259,14 +260,14 @@ void MCB::ReelIn()
 			// power off if the home didn't complete
 			levelWind.UpdateDriveStatus();
 			if (!levelWind.drive_status.lsp_event) {
-				
+				Serial.println("Home didn't complete, powering off");
 				LevelWindControllerOff();
 				ReelControllerOff();
 			}
 		 	else {
-			ReelControllerOff();
-			LevelWindControllerOff();
-			//Serial.println("Controller Commanded to Power off");
+			//ReelControllerOff();
+			//LevelWindControllerOff();
+			//Serial.println("Controller Commanded to Power");
 			action_queue.Push(ACT_SWITCH_READY);
 			}
 		}
@@ -290,6 +291,18 @@ void MCB::Dock()
 
 		if (!limitMonitor.VerifyDeployVoltage()) {
 			dibDriver.dibComm.TX_Error("Voltage too low to dock!");
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			return;
+		}
+
+		if (!ReelControllerOn()) {
+			dibDriver.dibComm.TX_Error("Error powering reel on");
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			return;
+		}
+
+		if (!LevelWindControllerOn()) {
+			dibDriver.dibComm.TX_Error("Error powering LW on");
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -497,6 +510,7 @@ void MCB::HomeLW()
 		break;
 
 	case STATE_EXIT:
+		homed = true;
 		Serial.println("Exiting home lw");
 		reel.StopProfile();
 		levelWind.StopProfile();
