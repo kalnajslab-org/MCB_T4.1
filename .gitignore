@@ -5,3 +5,4 @@
 .vscode/ipch
 .vscode/
 src/MCB_T4.1.cpp
+__pycache__/
