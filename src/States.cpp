@@ -215,7 +215,7 @@ void MCB::ReelIn()
 	case REEL_IN_START_CAM:
 		homed = false;
 		lw_docked = false;
-		
+
 		if (!levelWind.WindOut(dibDriver.mcbParameters.retract_velocity)) { // will home
 			reel.StopProfile();
 			dibDriver.dibComm.TX_Error("Error starting camming");
@@ -265,8 +265,10 @@ void MCB::ReelIn()
 				ReelControllerOff();
 			}
 		 	else {
-			//ReelControllerOff();
-			//LevelWindControllerOff();
+			#ifdef INST_RATS:
+				ReelControllerOff();
+				LevelWindControllerOff();
+			#endif
 			//Serial.println("Controller Commanded to Power");
 			action_queue.Push(ACT_SWITCH_READY);
 			}
