@@ -75,6 +75,9 @@ void InternalSerialDriverMCB::HandleASCII(void)
 	case MCB_HOME_LW:
 		state_queue->Push(ACT_HOME_LW);
 		break;
+	case MCB_CENTER_LW:
+		state_queue->Push(ACT_CENTER_LW);
+		break;
 	case MCB_ZERO_REEL:
 		state_queue->Push(ACT_ZERO_REEL);
 		break;
@@ -188,6 +191,7 @@ void InternalSerialDriverMCB::PrintDebugMenu()
 	PrintDebugCommand(MCB_GO_LOW_POWER, ";\t(low power)");
 	PrintDebugCommand(MCB_GO_READY, ";\t(ready)");
 	PrintDebugCommand(MCB_HOME_LW, ";\t(home level wind)");
+	PrintDebugCommand(MCB_CENTER_LW, ";\t(center level wind)");
 	PrintDebugCommand(MCB_ZERO_REEL, ";\t(zero reel)");
 	PrintDebugCommand(MCB_GET_TEMPERATURES, ";\t(get temps)");
 	PrintDebugCommand(MCB_GET_VOLTAGES, ";\t(get volts)");

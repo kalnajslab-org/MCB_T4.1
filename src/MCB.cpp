@@ -221,6 +221,14 @@ void MCB::PerformActions(void)
 				dibDriver.dibComm.TX_Error("Home denied, reel ops ongoing");
 			}
 			break;
+		case ACT_CENTER_LW:
+			// only center if not currently performing reel operation
+			if (curr_state == ST_NOMINAL || curr_state == ST_READY) {
+				SetState(ST_CENTER_LW);
+			} else {
+				dibDriver.dibComm.TX_Error("Center LW denied, reel ops ongoing");
+			}
+			break;
 		case ACT_BRAKE_ON:
 			reel.BrakeOn();
 			break;

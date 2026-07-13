@@ -22,6 +22,7 @@ enum State_Actions_t : uint8_t {
     ACT_DOCK,
     ACT_IN_NO_LW,
     ACT_HOME_LW,
+    ACT_CENTER_LW,
     ACT_BRAKE_ON,
     ACT_BRAKE_OFF,
     ACT_CONTROLLERS_ON,

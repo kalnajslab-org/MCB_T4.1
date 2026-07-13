@@ -44,6 +44,7 @@ enum MCB_States_t : uint8_t {
 	ST_DOCK,
 	ST_IN_NO_LW,
 	ST_HOME_LW,
+	ST_CENTER_LW,
 	NUM_STATES, // not a state, used for counting
 	UNUSED_STATE = 0xFF // not a state, used as default
 };
@@ -77,6 +78,7 @@ private:
 	void Dock();
 	void InNoLW();
 	void HomeLW();
+	void CenterLW();
 
 	// Array of state functions
 	void (MCB::*state_array[NUM_STATES])() = {
@@ -86,7 +88,8 @@ private:
 		&MCB::ReelIn,
 		&MCB::Dock,
 		&MCB::InNoLW,
-		&MCB::HomeLW
+		&MCB::HomeLW,
+		&MCB::CenterLW
 	};
 
 	// Helper functions

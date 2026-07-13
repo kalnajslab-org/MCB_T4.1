@@ -24,6 +24,7 @@
 #define LW_STEPS_PER_MM		10500
 
 #define LW_HOME_MILLIS		30000
+#define LW_CENTER_MILLIS	15000
 
 // SET THIS MACRO TO CHANGE THE CAM RATIO
 // 30lb tuflin is 0.28mm diam, try 0.33m for some squishing of the fiber
