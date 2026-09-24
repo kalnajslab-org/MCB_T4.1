@@ -23,22 +23,22 @@ ConfigManagerMCB::ConfigManagerMCB()
 	, mtr1_temp_lim({80.0f,-15.0f})
 	, mtr2_temp_lim({60.0f,-15.0f})
 	, mc1_temp_lim({80.0f,-40.0f})
-	, mc2_temp_lim({FLT_MAX,FLT_MIN})      // limit not in use
-	, dcdc_temp_lim({FLT_MAX,FLT_MIN})     // limit not in use
-	, spare_therm_lim({FLT_MAX,FLT_MIN})   // limit not in use
-	, vmon_3v3_lim({FLT_MAX,FLT_MIN})      // limit not in use
-	, vmon_15v_lim({FLT_MAX,FLT_MIN})      // limit not in use
-	, vmon_20v_lim({FLT_MAX,FLT_MIN})      // limit not in use
-	, vmon_spool_lim({FLT_MAX,FLT_MIN})    // limit not in use
-	, imon_brake_lim({FLT_MAX,FLT_MIN})    // limit not in use
-	, imon_mc_lim({FLT_MAX,FLT_MIN})       // limit not in use
+	, mc2_temp_lim(LIMIT_UNUSED)      // limit not in use
+	, dcdc_temp_lim(LIMIT_UNUSED)     // limit not in use
+	, spare_therm_lim(LIMIT_UNUSED)   // limit not in use
+	, vmon_3v3_lim(LIMIT_UNUSED)      // limit not in use
+	, vmon_15v_lim(LIMIT_UNUSED)      // limit not in use
+	, vmon_20v_lim(LIMIT_UNUSED)      // limit not in use
+	, vmon_spool_lim(LIMIT_UNUSED)    // limit not in use
+	, imon_brake_lim(LIMIT_UNUSED)    // limit not in use
+	, imon_mc_lim(LIMIT_UNUSED)       // limit not in use
 	, imon_mtr1_lim({13.75f,-10.0f})
-	, imon_mtr2_lim({FLT_MAX,FLT_MIN})     // limit not in use
+	, imon_mtr2_lim(LIMIT_UNUSED)     // limit not in use
 	, reel_torque_lim({500.0f,-500.0f})
 	, lw_torque_lim({2000.0f,-2000.0f})
 	, tmslow_num_samples(60)
 	, tmfast_num_samples(10)
-	, limits_enabled(true)
+	, limits_enabled(LIMITS_ENABLED_DEFAULT)
     // ----------------------------------------------------
 { }
 
