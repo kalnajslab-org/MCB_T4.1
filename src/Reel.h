@@ -132,6 +132,9 @@ public:
 	Reel(uint8_t expeditor_axis);
 	bool SetPosition(float new_pos);
 	bool SetPosition(int32_t new_pos);
+	bool SetPositionDeferred(float new_pos);
+	bool SetPositionDeferred(int32_t new_pos);
+	bool CommitDeferredPosition();
 	bool UpdatePosition();
 	bool UpdateSpeed();
 	void SetToStoredPosition();
@@ -147,7 +150,14 @@ public:
 
 	int32_t absolute_position; // in encoder units (24000 per rotation)
 	float speed;
+
+	// true once SetPositionDeferred has cached a position that hasn't yet
+	// been written to the controller (deferred so the motor doesn't turn
+	// while the RPU may be docked; flushed by CommitDeferredPosition the
+	// next time ReelIn/ReelOut actually commands motion)
+	bool position_write_pending = false;
 private:
+	int32_t pending_position = 0;
 	StorageManagerMCB storageManager; // supports multiple objects
 };
 

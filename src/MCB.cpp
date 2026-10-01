@@ -274,6 +274,22 @@ void MCB::PerformActions(void)
 			dibDriver.dibComm.TX_Ack(MCB_DOCK_ACC,true);
 			break;
 		case ACT_ZERO_REEL:
+#ifdef INST_RACHUTS
+			// deferred: caches the position and logs it to SD immediately, but
+			// leaves the controller's own register untouched (SetAbsolutePosition
+			// briefly energizes the motor/releases the brake on our controllers,
+			// which can slacken the line and break the dock connector's electrical
+			// contact if the RPU is docked). The controller is updated the next
+			// time the reel actually turns, in Reel::ReelIn()/ReelOut().
+			Serial.println("Zeroing reel (deferred until next motion)");
+			if (curr_state == ST_NOMINAL || curr_state == ST_READY) {
+				if (reel.SetPositionDeferred(0.0f)) {
+					dibDriver.dibComm.TX_Ack(MCB_ZERO_REEL, true);
+				} else {
+					dibDriver.dibComm.TX_Ack(MCB_ZERO_REEL, false);
+				}
+			}
+#else
 			Serial.println("Zeroing reel");
 			if (curr_state == ST_NOMINAL || curr_state == ST_READY) {
 				ReelControllerOn();
@@ -284,6 +300,7 @@ void MCB::PerformActions(void)
 				}
 				ReelControllerOff();
 			}
+#endif
 			break;
 		case ACT_LIMIT_EXCEEDED:
 			// only an error if not in the ready/nominal states, and limits are enabled
