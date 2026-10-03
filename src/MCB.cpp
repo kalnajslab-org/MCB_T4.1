@@ -62,6 +62,14 @@ void MCB::Startup()
     } else {
 	    DEBUG_SERIAL.println("Config manager init successful");
     }
+#ifdef INST_RATS
+	// RATS: whatever EEPROM holds, every boot starts with limits ignored and the reel torque
+	// limit off (+/-500 is unreachable: the reading is IQ/500 and IQ is int16). MCB_USE_LIMITS
+	// and MCB_TORQUE_LIMITS therefore last until the next power cycle.
+	configManager.limits_enabled.Write(false);
+	configManager.reel_torque_lim.Write(Limit_Config_t(500.0f, -500.0f));
+	DEBUG_SERIAL.println("RATS: limits ignored and reel torque limit off at boot");
+#endif
     //    SD:
 	if (!storageManager.StartSD(configManager.boot_count.Read())) {
         dibDriver.dibComm.TX_Error("MCB error starting SD card!");

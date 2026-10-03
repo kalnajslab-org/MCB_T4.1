@@ -16,9 +16,24 @@ struct Limit_Config_t {
     float hi;
     float lo;
 
+#ifdef INST_RATS
+	// RATS build: a "no limit" low bound must be the most negative float. FLT_MIN is the
+	// smallest POSITIVE float, so with it any reading <= 0 counted as under-limit.
+	Limit_Config_t(float in_hi = FLT_MAX, float in_lo = -FLT_MAX) : hi(in_hi), lo(in_lo) {}
+#else
 	// constuctor defaults to float max and min
 	Limit_Config_t(float in_hi = FLT_MAX, float in_lo = FLT_MIN) : hi(in_hi), lo(in_lo) {}
+#endif
 };
+
+#ifdef INST_RATS
+// RATS build: unused limits are truly off, and limits are ignored at boot
+#define LIMIT_UNUSED            Limit_Config_t(FLT_MAX, -FLT_MAX)
+#define LIMITS_ENABLED_DEFAULT  false
+#else
+#define LIMIT_UNUSED            Limit_Config_t(FLT_MAX, FLT_MIN)
+#define LIMITS_ENABLED_DEFAULT  true
+#endif
 
 class ConfigManagerMCB : public TeensyEEPROM {
 private:
@@ -28,7 +43,11 @@ public:
     ConfigManagerMCB();
 
     // constants, manually change version number here to force update
+#ifdef INST_RATS
+    static const uint16_t CONFIG_VERSION = 0x5C02; // RATS: unused-limit low bounds fixed, limits ignored at boot
+#else
     static const uint16_t CONFIG_VERSION = 0x5C01;
+#endif
     static const uint16_t BASE_ADDRESS = 0x0000;
 
     // ------------------ Configurations ------------------
