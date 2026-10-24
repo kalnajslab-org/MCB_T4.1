@@ -99,6 +99,26 @@ void MCB::Startup()
 }
 
 // note that the loop timing is controlled in MCB_Main.ino
+#ifdef INST_RACHUTS
+// error TM text for rejected actions and controller start-up failures
+static char action_error[MCB_ERROR_BUF_SIZE];
+
+static const char * StateName(MCB_States_t state)
+{
+	static const char * names[NUM_STATES] = {"READY", "NOMINAL", "REEL_OUT", "REEL_IN",
+	                                         "DOCK", "IN_NO_LW", "HOME_LW", "CENTER_LW"};
+	return (state < NUM_STATES) ? names[state] : "UNKNOWN";
+}
+
+// Starts a drive's control loops. Returns NULL on success, otherwise the step that failed.
+static const char * StartControlLoops(Technosoft & drive)
+{
+	if (!drive.SendEndInit()) return "EndInit failed";
+	if (!drive.SetAxisOn()) return "AxisOn failed";
+	return NULL;
+}
+#endif
+
 void MCB::Loop()
 {
 	dibDriver.RunDebugDriver();
@@ -191,7 +211,12 @@ void MCB::PerformActions(void)
 				SetState(ST_REEL_OUT);
 				dibDriver.dibComm.TX_Ack(MCB_REEL_OUT, true);
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Deploy denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Deploy denied, reel ops ongoing");
+#endif
 			}
 			break;
 		case ACT_RETRACT_X:
@@ -200,7 +225,12 @@ void MCB::PerformActions(void)
 				SetState(ST_REEL_IN);
 				dibDriver.dibComm.TX_Ack(MCB_REEL_IN, true);
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Retract denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Retract denied, reel ops ongoing");
+#endif
 			}
 			break;
 		case ACT_DOCK:
@@ -209,7 +239,12 @@ void MCB::PerformActions(void)
 				SetState(ST_DOCK);
 				dibDriver.dibComm.TX_Ack(MCB_DOCK, true);
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Dock denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Dock denied, reel ops ongoing");
+#endif
 			}
 			break;
 		case ACT_IN_NO_LW:
@@ -218,7 +253,12 @@ void MCB::PerformActions(void)
 				SetState(ST_IN_NO_LW);
 				dibDriver.dibComm.TX_Ack(MCB_IN_NO_LW, true);
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Reel in no LW denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Reel in no LW denied, reel ops ongoing");
+#endif
 			}
 			break;
 		case ACT_HOME_LW:
@@ -226,7 +266,12 @@ void MCB::PerformActions(void)
 			if (curr_state == ST_NOMINAL || curr_state == ST_READY) {
 				SetState(ST_HOME_LW);
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Home denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Home denied, reel ops ongoing");
+#endif
 			}
 			break;
 		case ACT_CENTER_LW:
@@ -234,7 +279,12 @@ void MCB::PerformActions(void)
 			if (curr_state == ST_NOMINAL || curr_state == ST_READY) {
 				SetState(ST_CENTER_LW);
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Center LW denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Center LW denied, reel ops ongoing");
+#endif
 			}
 			break;
 		case ACT_BRAKE_ON:
@@ -253,7 +303,12 @@ void MCB::PerformActions(void)
 					dibDriver.dibComm.TX_Error("Error powering controllers");
 				}
 			} else {
+#ifdef INST_RACHUTS
+				snprintf(action_error, sizeof(action_error), "Controllers on denied: must be READY (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+#else
 				dibDriver.dibComm.TX_Error("Wrong state for powering controllers");
+#endif
 			}
 			break;
 		case ACT_CONTROLLERS_OFF:
@@ -297,6 +352,12 @@ void MCB::PerformActions(void)
 					dibDriver.dibComm.TX_Ack(MCB_ZERO_REEL, false);
 				}
 			}
+#ifdef INST_RACHUTS
+			else {
+				snprintf(action_error, sizeof(action_error), "Zero reel denied, reel ops ongoing (state %s)", StateName(curr_state));
+				dibDriver.dibComm.TX_Error(action_error);
+			}
+#endif
 #else
 			Serial.println("Zeroing reel");
 			if (curr_state == ST_NOMINAL || curr_state == ST_READY) {
@@ -472,16 +533,32 @@ void MCB::CheckLevelWindCam(void)
 		Serial.println("Motion fault (lw)");
 		LogFault();
 	} else if (!lw_direction_out && levelWind.drive_status.motion_complete) {
+#ifdef INST_RACHUTS
+		if (!levelWind.WindOut(dibDriver.mcbParameters.retract_velocity)) {
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			snprintf(action_error, sizeof(action_error), "LW cam wind out failed: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(action_error);
+		}
+#else
 		if (!levelWind.WindOut(dibDriver.mcbParameters.retract_velocity)) {
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			Serial.println("Unable to command next lw segment");
 		}
+#endif
 		lw_direction_out ^= true; // flip direction tracker
 	} else if (lw_direction_out && levelWind.drive_status.lsp_event && levelWind.drive_status.motion_complete) {
+#ifdef INST_RACHUTS
+		if (!levelWind.WindIn(dibDriver.mcbParameters.retract_velocity)) {
+			action_queue.Push(ACT_SWITCH_NOMINAL);
+			snprintf(action_error, sizeof(action_error), "LW cam wind in failed: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(action_error);
+		}
+#else
 		if (!levelWind.WindIn(dibDriver.mcbParameters.retract_velocity)) {
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			Serial.println("Unable to command next lw segment");
 		}
+#endif
 		lw_direction_out ^= true; // flip direction tracker
 	}
 }
@@ -532,11 +609,20 @@ void MCB::LogFault(void)
 bool MCB::ReelControllerOn(void)
 {
 	if (reel_initialized) {
+#ifdef INST_RACHUTS
+		if (const char * loop_error = StartControlLoops(reel)) {
+#else
 		if (!reel.SendEndInit() || !reel.SetAxisOn()) {
+#endif
 			powerController.ReelOff();
 			action_queue.Push(ACT_SWITCH_READY);
 			storageManager.LogSD("Error starting reel control loops", ERR_DATA);
+#ifdef INST_RACHUTS
+			snprintf(action_error, sizeof(action_error), "Error starting reel control loops: %s", loop_error);
+			dibDriver.dibComm.TX_Error(action_error);
+#else
 			dibDriver.dibComm.TX_Error("Error starting reel control loops");
+#endif
 			return false;
 		}
 		return true;
@@ -568,11 +654,20 @@ bool MCB::ReelControllerOn(void)
 	// start the drive control loops
 	delay(500);
 
+#ifdef INST_RACHUTS
+	if (const char * loop_error = StartControlLoops(reel)) {
+#else
 	if (!reel.SendEndInit() || !reel.SetAxisOn()) {
+#endif
 		powerController.ReelOff();
 		action_queue.Push(ACT_SWITCH_READY);
 		storageManager.LogSD("Error starting reel control loops", ERR_DATA);
+#ifdef INST_RACHUTS
+		snprintf(action_error, sizeof(action_error), "Error starting reel control loops: %s", loop_error);
+		dibDriver.dibComm.TX_Error(action_error);
+#else
 		dibDriver.dibComm.TX_Error("Error starting reel control loops");
+#endif
 		return false;
 	}
 
@@ -597,21 +692,39 @@ bool MCB::LevelWindControllerOn(void)
 	delay(500);
 
 	// start the drive control loops
+#ifdef INST_RACHUTS
+	if (const char * loop_error = StartControlLoops(levelWind)) {
+#else
 	if (!levelWind.SendEndInit() || !levelWind.SetAxisOn()) {
+#endif
 		powerController.LevelWindOff();
 		action_queue.Push(ACT_SWITCH_READY);
 		storageManager.LogSD("Error starting level wind control loops", ERR_DATA);
+#ifdef INST_RACHUTS
+		snprintf(action_error, sizeof(action_error), "Error starting level wind control loops: %s", loop_error);
+		dibDriver.dibComm.TX_Error(action_error);
+#else
 		dibDriver.dibComm.TX_Error("Error starting level wind control loops");
+#endif
 		return false;
 	}
 
 	// restart the reel drive control loops
+#ifdef INST_RACHUTS
+	if (const char * loop_error = StartControlLoops(reel)) {
+#else
 	if (!reel.SendEndInit() || !reel.SetAxisOn()) {
+#endif
 		powerController.LevelWindOff();
 		powerController.ReelOff();
 		action_queue.Push(ACT_SWITCH_READY);
 		storageManager.LogSD("Error starting reel control loops", ERR_DATA);
+#ifdef INST_RACHUTS
+		snprintf(action_error, sizeof(action_error), "Error starting reel control loops in level wind on: %s", loop_error);
+		dibDriver.dibComm.TX_Error(action_error);
+#else
 		dibDriver.dibComm.TX_Error("Error starting reel control loops in level wind on");
+#endif
 		return false;
 	}
 

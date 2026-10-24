@@ -16,6 +16,13 @@
 #include "SafeBuffer.h"
 #include <StdInt.h>
 
+#ifdef INST_RACHUTS
+// Buffer size for MCB error TM text: at most 89 characters. StratoCore_RACHuTS
+// sends MCB errors to the ground as "MCBString: " + text in a TM StateMess
+// field, which the Zephyr interface (STR2-ZEPH-DCI-0-031) limits to 100 chars.
+#define MCB_ERROR_BUF_SIZE	90
+#endif
+
 struct MCBParameters_t {
 	// deploy
 	float deploy_length;

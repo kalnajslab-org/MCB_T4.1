@@ -58,6 +58,11 @@ void InternalSerialDriverMCB::RunDebugDriver(void)
 	dibComm.UpdatePort(&DIB_SERIAL);
 }
 
+#ifdef INST_RACHUTS
+// error TM text for a rejected DIB message
+static char dib_error[MCB_ERROR_BUF_SIZE];
+#endif
+
 void InternalSerialDriverMCB::HandleASCII(void)
 {
 	switch (dibComm.ascii_rx.msg_id) {
@@ -123,63 +128,114 @@ void InternalSerialDriverMCB::HandleASCII(void)
 			state_queue->Push(ACT_SET_DEPLOY_V);
 			state_queue->Push(ACT_DEPLOY_X);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for reel out command, ignored");
+		}
+#endif
 		break;
 	case MCB_REEL_IN:
 		if (dibComm.RX_Reel_In(&(mcbParameters.retract_length), &(mcbParameters.retract_velocity))) {
 			state_queue->Push(ACT_SET_RETRACT_V);
 			state_queue->Push(ACT_RETRACT_X);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for reel in command, ignored");
+		}
+#endif
 		break;
 	case MCB_DOCK:
 		if (dibComm.RX_Dock(&(mcbParameters.dock_length), &(mcbParameters.dock_velocity))) {
 			state_queue->Push(ACT_SET_DOCK_V);
 			state_queue->Push(ACT_DOCK);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for dock command, ignored");
+		}
+#endif
 		break;
 	case MCB_IN_NO_LW:
 		if (dibComm.RX_In_No_LW(&(mcbParameters.retract_length), &(mcbParameters.retract_velocity))) {
 			state_queue->Push(ACT_SET_RETRACT_V);
 			state_queue->Push(ACT_IN_NO_LW);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for reel in (no LW) command, ignored");
+		}
+#endif
 		break;
 	case MCB_OUT_ACC:
 		if (dibComm.RX_Out_Acc(&(mcbParameters.deploy_acceleration))) {
 			state_queue->Push(ACT_SET_DEPLOY_A);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for out acceleration command, ignored");
+		}
+#endif
 		break;
 	case MCB_IN_ACC:
 		if (dibComm.RX_In_Acc(&(mcbParameters.retract_acceleration))) {
 			state_queue->Push(ACT_SET_RETRACT_A);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for in acceleration command, ignored");
+		}
+#endif
 		break;
 	case MCB_DOCK_ACC:
 		if (dibComm.RX_Dock_Acc(&(mcbParameters.dock_acceleration))) {
 			state_queue->Push(ACT_SET_DOCK_A);
 		}
+#ifdef INST_RACHUTS
+		else {
+			dibComm.TX_Error("Bad parameters for dock acceleration command, ignored");
+		}
+#endif
 		break;
 	case MCB_TEMP_LIMITS:
 		if (dibComm.RX_Temp_Limits(&(mcbParameters.temp_limits[0]),&(mcbParameters.temp_limits[1]),&(mcbParameters.temp_limits[2]),&(mcbParameters.temp_limits[3]),&(mcbParameters.temp_limits[4]),&(mcbParameters.temp_limits[5]))) {
 			state_queue->Push(ACT_TEMP_LIMITS);
 		} else {
+#ifdef INST_RACHUTS
+			dibComm.TX_Error("Bad parameters for temp limits command, ignored");
+#else
 			Serial.println("Error setting temp limits");
+#endif
 		}
 		break;
 	case MCB_TORQUE_LIMITS:
 		if (dibComm.RX_Torque_Limits(&(mcbParameters.torque_limits[0]),&(mcbParameters.torque_limits[1]))) {
 			state_queue->Push(ACT_TORQUE_LIMITS);
 		} else {
+#ifdef INST_RACHUTS
+			dibComm.TX_Error("Bad parameters for torque limits command, ignored");
+#else
 			Serial.println("Error setting torque limits");
+#endif
 		}
 		break;
 	case MCB_CURR_LIMITS:
 		if (dibComm.RX_Curr_Limits(&(mcbParameters.curr_limits[0]),&(mcbParameters.curr_limits[1]))) {
 			state_queue->Push(ACT_CURR_LIMITS);
 		} else {
+#ifdef INST_RACHUTS
+			dibComm.TX_Error("Bad parameters for current limits command, ignored");
+#else
 			Serial.println("Error setting temp limits");
+#endif
 		}
 		break;
 	default:
 		storageManager.LogSD("Unknown DIB RX message", ERR_DATA);
+#ifdef INST_RACHUTS
+		snprintf(dib_error, sizeof(dib_error), "Unknown DIB message id %u, ignored", dibComm.ascii_rx.msg_id);
+		dibComm.TX_Error(dib_error);
+#endif
 		break;
 	}
 }

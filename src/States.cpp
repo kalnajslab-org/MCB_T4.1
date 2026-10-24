@@ -7,6 +7,19 @@
 
 #include "MCB.h"
 
+#ifdef INST_RACHUTS
+// error TM text for a rejected motion command, including Reel::last_error
+static char motion_error[MCB_ERROR_BUF_SIZE];
+
+// formats the error TM for a motion refused because the 15V rail is too low
+static const char * LowVoltageError(const char * operation, float voltage)
+{
+	snprintf(motion_error, sizeof(motion_error), "Voltage too low to %s: 15V rail %.2f V < %.1f V",
+	         operation, voltage, MIN_DEPLOY_VOLTAGE);
+	return motion_error;
+}
+#endif
+
 // --------------------------------------------------------
 // Substates
 // --------------------------------------------------------
@@ -107,7 +120,11 @@ void MCB::ReelOut()
 	switch (substate) {
 	case STATE_ENTRY:
 		if (!limitMonitor.VerifyDeployVoltage()) {
+#ifdef INST_RACHUTS
+			dibDriver.dibComm.TX_Error(LowVoltageError("reel out", limitMonitor.vmon_channels[VMON_15V].last_voltage));
+#else
 			dibDriver.dibComm.TX_Error("Voltage too low to reel out!");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -132,7 +149,12 @@ void MCB::ReelOut()
 		}
 
 		if (!reel.ReelOut(dibDriver.mcbParameters.deploy_length, dibDriver.mcbParameters.deploy_velocity, configManager.deploy_acceleration.Read())) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error commanding reel out: %.50s", reel.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error commanding reel out");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 		}
 
@@ -178,7 +200,11 @@ void MCB::ReelIn()
 		Serial.println("Entering reel in");
 
 		if (!limitMonitor.VerifyDeployVoltage()) {
+#ifdef INST_RACHUTS
+			dibDriver.dibComm.TX_Error(LowVoltageError("reel in", limitMonitor.vmon_channels[VMON_15V].last_voltage));
+#else
 			dibDriver.dibComm.TX_Error("Voltage too low to reel in!");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -206,7 +232,12 @@ void MCB::ReelIn()
 
 	case REEL_IN_START_MOTION:
 		if (!reel.ReelIn(dibDriver.mcbParameters.retract_length, dibDriver.mcbParameters.retract_velocity, configManager.retract_acceleration.Read())) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error commanding reel in: %.50s", reel.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error commanding reel in");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -224,7 +255,12 @@ void MCB::ReelIn()
 
 		if (!levelWind.WindOut(dibDriver.mcbParameters.retract_velocity)) { // will home
 			reel.StopProfile();
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error starting camming: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error starting camming");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			camming = false;
 			return;
@@ -298,7 +334,11 @@ void MCB::Dock()
 		Serial.println("Entering dock");
 
 		if (!limitMonitor.VerifyDeployVoltage()) {
+#ifdef INST_RACHUTS
+			dibDriver.dibComm.TX_Error(LowVoltageError("dock", limitMonitor.vmon_channels[VMON_15V].last_voltage));
+#else
 			dibDriver.dibComm.TX_Error("Voltage too low to dock!");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -349,7 +389,12 @@ void MCB::Dock()
 
 	case DOCK_START_MOTION:
 		if (!reel.ReelIn(dibDriver.mcbParameters.dock_length, dibDriver.mcbParameters.dock_velocity, configManager.dock_acceleration.Read())) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error commanding reel in for dock: %.50s", reel.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error commanding reel in for dock");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -358,7 +403,12 @@ void MCB::Dock()
 		Serial.println(dibDriver.mcbParameters.dock_length);
 
 		if (!lw_docked && !levelWind.SetCenter()) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error setting lw center for dock: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error setting lw center for dock");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -404,7 +454,11 @@ void MCB::InNoLW()
 	switch (substate) {
 	case STATE_ENTRY:
 		if (!limitMonitor.VerifyDeployVoltage()) {
+#ifdef INST_RACHUTS
+			dibDriver.dibComm.TX_Error(LowVoltageError("reel in (no LW)", limitMonitor.vmon_channels[VMON_15V].last_voltage));
+#else
 			dibDriver.dibComm.TX_Error("Voltage too low to reel in (no LW)!");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -429,7 +483,12 @@ void MCB::InNoLW()
 		}
 
 		if (!reel.ReelIn(dibDriver.mcbParameters.retract_length, dibDriver.mcbParameters.retract_velocity, configManager.retract_acceleration.Read())) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error commanding reel in (no LW): %.50s", reel.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error comanding reel in (no LW)");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 		}
 
@@ -477,7 +536,11 @@ void MCB::HomeLW()
 		Serial.println("Entering home lw");
 
 		if (!limitMonitor.VerifyDeployVoltage()) {
+#ifdef INST_RACHUTS
+			dibDriver.dibComm.TX_Error(LowVoltageError("home LW", limitMonitor.vmon_channels[VMON_15V].last_voltage));
+#else
 			dibDriver.dibComm.TX_Error("Voltage too low to home!");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -498,7 +561,12 @@ void MCB::HomeLW()
 
 	case HOME_START_MOTION:
 		if (!levelWind.Home()) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error homing LW: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error homing LW");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -541,7 +609,11 @@ void MCB::CenterLW()
 		Serial.println("Entering center lw");
 
 		if (!limitMonitor.VerifyDeployVoltage()) {
+#ifdef INST_RACHUTS
+			dibDriver.dibComm.TX_Error(LowVoltageError("center LW", limitMonitor.vmon_channels[VMON_15V].last_voltage));
+#else
 			dibDriver.dibComm.TX_Error("Voltage too low to center LW!");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -562,7 +634,12 @@ void MCB::CenterLW()
 
 	case CENTER_START_HOME:
 		if (!levelWind.Home()) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error homing LW for center: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error homing LW for center");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}
@@ -584,7 +661,12 @@ void MCB::CenterLW()
 
 	case CENTER_START_MOTION:
 		if (!levelWind.SetCenter()) {
+#ifdef INST_RACHUTS
+			snprintf(motion_error, sizeof(motion_error), "Error centering LW: %.50s", levelWind.last_error);
+			dibDriver.dibComm.TX_Error(motion_error);
+#else
 			dibDriver.dibComm.TX_Error("Error centering LW");
+#endif
 			action_queue.Push(ACT_SWITCH_NOMINAL);
 			return;
 		}

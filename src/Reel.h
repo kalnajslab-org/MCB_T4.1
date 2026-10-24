@@ -156,7 +156,16 @@ public:
 	// while the RPU may be docked; flushed by CommitDeferredPosition the
 	// next time ReelIn/ReelOut actually commands motion)
 	bool position_write_pending = false;
+#ifdef INST_RACHUTS
+
+	// reason the last ReelIn/ReelOut was rejected, for inclusion in error TM
+	char last_error[64] = "";
+#endif
 private:
+#ifdef INST_RACHUTS
+	bool CheckMotionParams(float num_revolutions, float speed, float acc);
+	bool CommandMotion(uint32_t num_units, uint32_t fixed_speed, uint32_t fixed_acc);
+#endif
 	int32_t pending_position = 0;
 	StorageManagerMCB storageManager; // supports multiple objects
 };

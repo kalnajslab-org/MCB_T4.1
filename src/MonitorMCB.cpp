@@ -8,6 +8,13 @@
 #include "MonitorMCB.h"
 #include "Serialize.h"
 
+#ifdef INST_RACHUTS
+// channel names for limit error TM, indexed like the tables in MonitorMCB.h
+static const char * temp_names[NUM_TEMP_SENSORS] = {"MTR1", "MTR2", "MC1", "SPARE1", "SPARE2"};
+static const char * vmon_names[NUM_VMON_CHANNELS] = {"3V3", "15V", "20V", "SPOOL"};
+static const char * imon_names[NUM_IMON_CHANNELS] = {"BRK", "MC", "MTR1", "MTR2", "INST"};
+#endif
+
 MonitorMCB::MonitorMCB(SafeBuffer * monitor_q, SafeBuffer * action_q, Reel * reel_in, LevelWind * lw_in, InternalSerialDriverMCB * dibdriver, ConfigManagerMCB * cfgManager)
     : storageManager()
     , tempC_MTR1(MTR1_THERM_CH)
@@ -279,7 +286,11 @@ bool MonitorMCB::CheckTemperatures(void)
                     temp_sensors[curr_sensor].over_temp = true;
                     temp_sensors[curr_sensor].under_temp = false;
                 }
+#ifdef INST_RACHUTS
+                snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Temp Limit: %s %.1f C > %g C", temp_names[curr_sensor], temp, temp_sensors[curr_sensor].limit_hi);
+#else
                 snprintf(limit_error, 100, "MCB Temp Limit, ch %u, t=%f", curr_sensor, temp);
+#endif
                 limits_ok = false;
             } else if (temp < temp_sensors[curr_sensor].limit_lo) {
                 if (!temp_sensors[curr_sensor].under_temp) { // if newly under
@@ -287,7 +298,11 @@ bool MonitorMCB::CheckTemperatures(void)
                     temp_sensors[curr_sensor].over_temp = false;
                     temp_sensors[curr_sensor].under_temp = true;
                 }
+#ifdef INST_RACHUTS
+                snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Temp Limit: %s %.1f C < %g C", temp_names[curr_sensor], temp, temp_sensors[curr_sensor].limit_lo);
+#else
                 snprintf(limit_error, 100, "MCB Temp Limit, ch %u, t=%f", curr_sensor, temp);
+#endif
                 limits_ok = false;
             } else {
                 temp_sensors[curr_sensor].over_temp = false;
@@ -373,7 +388,11 @@ static String voltage_string = "";
             vmon_channels[curr_channel].over_voltage = true;
             vmon_channels[curr_channel].under_voltage = false;
         }
+#ifdef INST_RACHUTS
+        snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Volt Limit: %s %.2f V > %g V", vmon_names[curr_channel], vmon_channels[curr_channel].last_voltage, vmon_channels[curr_channel].limit_hi);
+#else
         snprintf(limit_error, 100, "MCB Volt Limit, ch %u, V=%f", curr_channel, vmon_channels[curr_channel].last_voltage);
+#endif
         limits_ok = false;
     } else if (vmon_channels[curr_channel].last_voltage < vmon_channels[curr_channel].limit_lo) {
         if (!vmon_channels[curr_channel].under_voltage) { // if newly under
@@ -381,7 +400,11 @@ static String voltage_string = "";
             vmon_channels[curr_channel].over_voltage = false;
             vmon_channels[curr_channel].under_voltage = true;
         }
+#ifdef INST_RACHUTS
+        snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Volt Limit: %s %.2f V < %g V", vmon_names[curr_channel], vmon_channels[curr_channel].last_voltage, vmon_channels[curr_channel].limit_lo);
+#else
         snprintf(limit_error, 100, "MCB Volt Limit, ch %u, V=%f", curr_channel, vmon_channels[curr_channel].last_voltage);
+#endif
         limits_ok = false;
     } else {
         vmon_channels[curr_channel].over_voltage = false;
@@ -450,7 +473,11 @@ bool MonitorMCB::CheckCurrents(void)
             imon_channels[curr_channel].over_current = true;
             imon_channels[curr_channel].under_current = false;
         }
+#ifdef INST_RACHUTS
+        snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Curr Limit: %s %.2f A > %g A", imon_names[curr_channel], imon_channels[curr_channel].last_current, imon_channels[curr_channel].limit_hi);
+#else
         snprintf(limit_error, 100, "MCB Curr Limit, ch %u, I=%f", curr_channel, imon_channels[curr_channel].last_current);
+#endif
         limits_ok = false;
     } else if (imon_channels[curr_channel].last_current < imon_channels[curr_channel].limit_lo) {
         if (!imon_channels[curr_channel].under_current) { // if newly under
@@ -458,7 +485,11 @@ bool MonitorMCB::CheckCurrents(void)
             imon_channels[curr_channel].over_current = false;
             imon_channels[curr_channel].under_current = true;
         }
+#ifdef INST_RACHUTS
+        snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Curr Limit: %s %.2f A < %g A", imon_names[curr_channel], imon_channels[curr_channel].last_current, imon_channels[curr_channel].limit_lo);
+#else
         snprintf(limit_error, 100, "MCB Curr Limit, ch %u, I=%f", curr_channel, imon_channels[curr_channel].last_current);
+#endif
         limits_ok = false;
     } else {
         imon_channels[curr_channel].over_current = false;
@@ -495,7 +526,11 @@ bool MonitorMCB::CheckTorques(void)
                     motor_torques[REEL_INDEX].over_torque = true;
                     motor_torques[REEL_INDEX].under_torque = false;
                 }
+#ifdef INST_RACHUTS
+                snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Reel Torque Limit: %.1f > %g", motor_torques[REEL_INDEX].last_torque, motor_torques[REEL_INDEX].limit_hi);
+#else
                 snprintf(limit_error, 100, "MCB Reel Torque Limit, t=%f", motor_torques[REEL_INDEX].last_torque);
+#endif
                 limits_ok = false;
             } else if (motor_torques[REEL_INDEX].last_torque < motor_torques[REEL_INDEX].limit_lo) {
                 if (!motor_torques[REEL_INDEX].under_torque) { // if newly under
@@ -503,7 +538,11 @@ bool MonitorMCB::CheckTorques(void)
                     motor_torques[REEL_INDEX].over_torque = false;
                     motor_torques[REEL_INDEX].under_torque = true;
                 }
+#ifdef INST_RACHUTS
+                snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB Reel Torque Limit: %.1f < %g", motor_torques[REEL_INDEX].last_torque, motor_torques[REEL_INDEX].limit_lo);
+#else
                 snprintf(limit_error, 100, "MCB Reel Torque Limit, t=%f", motor_torques[REEL_INDEX].last_torque);
+#endif
                 limits_ok = false;
             } else {
                 motor_torques[REEL_INDEX].over_torque = false;
@@ -526,7 +565,11 @@ bool MonitorMCB::CheckTorques(void)
                     motor_torques[LEVEL_WIND_INDEX].over_torque = true;
                     motor_torques[LEVEL_WIND_INDEX].under_torque = false;
                 }
+#ifdef INST_RACHUTS
+                snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB LW Torque Limit: %.1f > %g", motor_torques[LEVEL_WIND_INDEX].last_torque, motor_torques[LEVEL_WIND_INDEX].limit_hi);
+#else
                 snprintf(limit_error, 100, "MCB LW Torque Limit, t=%f", motor_torques[LEVEL_WIND_INDEX].last_torque);
+#endif
                 limits_ok = false;
             } else if (motor_torques[LEVEL_WIND_INDEX].last_torque < motor_torques[LEVEL_WIND_INDEX].limit_lo) {
                 if (!motor_torques[LEVEL_WIND_INDEX].under_torque) { // if newly under
@@ -534,7 +577,11 @@ bool MonitorMCB::CheckTorques(void)
                     motor_torques[LEVEL_WIND_INDEX].over_torque = false;
                     motor_torques[LEVEL_WIND_INDEX].under_torque = true;
                 }
+#ifdef INST_RACHUTS
+                snprintf(limit_error, MCB_ERROR_BUF_SIZE, "MCB LW Torque Limit: %.1f < %g", motor_torques[LEVEL_WIND_INDEX].last_torque, motor_torques[LEVEL_WIND_INDEX].limit_lo);
+#else
                 snprintf(limit_error, 100, "MCB LW Torque Limit, t=%f", motor_torques[LEVEL_WIND_INDEX].last_torque);
+#endif
                 limits_ok = false;
             } else {
                 motor_torques[LEVEL_WIND_INDEX].over_torque = false;

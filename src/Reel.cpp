@@ -125,11 +125,59 @@ bool Reel::StopProfile() {
 	return CallFunction(STOP_PROFILE_R);
 }
 
+#ifdef INST_RACHUTS
+// Validates motion parameters against the instrument limits in Reel.h. On
+// failure, last_error describes which parameter was out of range so callers
+// can include it in the error TM.
+bool Reel::CheckMotionParams(float num_revolutions, float speed, float acc) {
+	last_error[0] = '\0';
+
+	if (num_revolutions > MAX_REVOLUTIONS || num_revolutions <= 0.0) {
+		snprintf(last_error, sizeof(last_error), "revs %.4g not in (0, %.1f]", num_revolutions, MAX_REVOLUTIONS);
+		return false;
+	}
+	if (speed > MAX_SPEED || speed <= 0.0) {
+		snprintf(last_error, sizeof(last_error), "speed %.4g not in (0, %.1f] rpm", speed, (float) MAX_SPEED);
+		return false;
+	}
+	if (acc > MAX_ACC || acc <= 0.0) {
+		snprintf(last_error, sizeof(last_error), "acc %.4g not in (0, %.2f] rot/s^2", acc, (float) MAX_ACC);
+		return false;
+	}
+	return true;
+}
+
+// Sends an already-converted motion profile to the controller and starts it.
+// On failure, last_error names the step that failed.
+bool Reel::CommandMotion(uint32_t num_units, uint32_t fixed_speed, uint32_t fixed_acc) {
+	if (!SetCommandPosition(num_units)) {
+		snprintf(last_error, sizeof(last_error), "controller rejected position");
+		return false;
+	}
+	if (!SetSlewRate(fixed_speed)) {
+		snprintf(last_error, sizeof(last_error), "controller rejected speed");
+		return false;
+	}
+	if (!SetAcceleration(fixed_acc)) {
+		snprintf(last_error, sizeof(last_error), "controller rejected acc");
+		return false;
+	}
+	if (!CallFunction(REEL_VARIABLE_R)) {
+		snprintf(last_error, sizeof(last_error), "controller rejected motion call");
+		return false;
+	}
+	return true;
+}
+#endif
+
 bool Reel::ReelIn(float num_revolutions, float speed, float acc) {
 	uint32_t num_units = 0;
 	uint32_t fixed_speed = 0;
 	uint32_t fixed_acc = 0;
 
+#ifdef INST_RACHUTS
+	if (!CheckMotionParams(num_revolutions, speed, acc)) { return false; }
+#else
 	if (num_revolutions > MAX_REVOLUTIONS || num_revolutions <= 0.0) { 
 		Serial.println("Revolutions Wrong");
 		return false; }
@@ -139,6 +187,7 @@ bool Reel::ReelIn(float num_revolutions, float speed, float acc) {
 	if (acc > MAX_ACC || acc <= 0.0) {
 		Serial.println("Acc Wrong");
 		return false; }
+#endif
 
 	// the reel is about to actually turn, so it's now safe to flush any
 	// position that was cached (rather than written) while stationary
@@ -157,6 +206,9 @@ bool Reel::ReelIn(float num_revolutions, float speed, float acc) {
 	fixed_speed = Float_To_Fixed(speed);
 	fixed_acc = Float_To_Fixed(acc);
 
+#ifdef INST_RACHUTS
+	return CommandMotion(num_units, fixed_speed, fixed_acc);
+#else
 	if (!SetCommandPosition(num_units)) { 
 		Serial.println("SetCommandPosition Wrong");
 		return false; }
@@ -168,6 +220,7 @@ bool Reel::ReelIn(float num_revolutions, float speed, float acc) {
 		return false; }
 
 	return CallFunction(REEL_VARIABLE_R);
+#endif
 }
 
 bool Reel::ReelOut(float num_revolutions, float speed, float acc) {
@@ -175,9 +228,13 @@ bool Reel::ReelOut(float num_revolutions, float speed, float acc) {
 	uint32_t fixed_speed = 0;
 	uint32_t fixed_acc = 0;
 
+#ifdef INST_RACHUTS
+	if (!CheckMotionParams(num_revolutions, speed, acc)) { return false; }
+#else
 	if (num_revolutions > MAX_REVOLUTIONS || num_revolutions <= 0.0) { return false; }
 	if (speed > MAX_SPEED || speed <= 0.0) { return false; }
 	if (acc > MAX_ACC || acc <= 0.0) { return false; }
+#endif
 
 	// the reel is about to actually turn, so it's now safe to flush any
 	// position that was cached (rather than written) while stationary
@@ -196,11 +253,15 @@ bool Reel::ReelOut(float num_revolutions, float speed, float acc) {
 	fixed_speed = Float_To_Fixed(speed);
 	fixed_acc = Float_To_Fixed(acc);
 
+#ifdef INST_RACHUTS
+	return CommandMotion(num_units, fixed_speed, fixed_acc);
+#else
 	if (!SetCommandPosition(num_units)) { return false; }
 	if (!SetSlewRate(fixed_speed)) { return false; }
 	if (!SetAcceleration(fixed_acc)) { return false; }
 
 	return CallFunction(REEL_VARIABLE_R);
+#endif
 }
 
 bool Reel::CamSetup() {

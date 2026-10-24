@@ -99,9 +99,17 @@ public:
 	bool WindIn(float reel_speed);
 
 	float absolute_position; // in mm, relative to home
+#ifdef INST_RACHUTS
+
+	// reason the last SetCenter/Home/WindOut/WindIn was rejected, for error TM
+	char last_error[64] = "";
+#endif
 
 private:
 	bool camming;
+#ifdef INST_RACHUTS
+	bool CallFunctionChecked(uint16_t address, const char * function_name);
+#endif
 };
 
 #endif
