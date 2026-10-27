@@ -103,6 +103,10 @@ public:
 
 	// reason the last SetCenter/Home/WindOut/WindIn was rejected, for error TM
 	char last_error[64] = "";
+
+	// reads the drive status register to check the drive answers;
+	// returns the Technosoft read code (1 = OK, see TechnosoftReadErrorName)
+	int ProbeStatus(void);
 #endif
 
 private:

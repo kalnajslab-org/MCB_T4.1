@@ -18,6 +18,11 @@ bool LevelWind::StopProfile() {
 }
 
 #ifdef INST_RACHUTS
+int LevelWind::ProbeStatus(void) {
+	uint16_t status = 0;
+	return Read16BitRAM(STATUS_LO_R, &status);
+}
+
 // Calls a TML function on the controller. On failure, last_error names it.
 bool LevelWind::CallFunctionChecked(uint16_t address, const char * function_name) {
 	last_error[0] = '\0';

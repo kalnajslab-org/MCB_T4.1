@@ -467,7 +467,13 @@ bool MonitorMCB::CheckCurrents(void)
     // check limits
     if (imon_channels[curr_channel].last_current > imon_channels[curr_channel].limit_hi) {
         if (!imon_channels[curr_channel].over_current) { // if newly over
+#ifdef INST_RACHUTS
+            char current_msg[48];
+            snprintf(current_msg, sizeof(current_msg), "Over current: %s %.2f A", imon_names[curr_channel], imon_channels[curr_channel].last_current);
+            storageManager.LogSD(current_msg, ERR_DATA);
+#else
             storageManager.LogSD("Over current", ERR_DATA);
+#endif
             Serial.print("OC channel: "); Serial.println(curr_channel);
             Serial.println(imon_channels[curr_channel].last_current);
             imon_channels[curr_channel].over_current = true;
@@ -481,7 +487,13 @@ bool MonitorMCB::CheckCurrents(void)
         limits_ok = false;
     } else if (imon_channels[curr_channel].last_current < imon_channels[curr_channel].limit_lo) {
         if (!imon_channels[curr_channel].under_current) { // if newly under
+#ifdef INST_RACHUTS
+            char current_msg[48];
+            snprintf(current_msg, sizeof(current_msg), "Under current: %s %.2f A", imon_names[curr_channel], imon_channels[curr_channel].last_current);
+            storageManager.LogSD(current_msg, ERR_DATA);
+#else
             storageManager.LogSD("Under current", ERR_DATA);
+#endif
             imon_channels[curr_channel].over_current = false;
             imon_channels[curr_channel].under_current = true;
         }

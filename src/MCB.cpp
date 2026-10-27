@@ -110,11 +110,123 @@ static const char * StateName(MCB_States_t state)
 	return (state < NUM_STATES) ? names[state] : "UNKNOWN";
 }
 
-// Starts a drive's control loops. Returns NULL on success, otherwise the step that failed.
-static const char * StartControlLoops(Technosoft & drive)
+// Reads and reports any bytes waiting on the drive serial link (both drives are on
+// MC1_SERIAL), logged to SD and echoed to the console. Before a start-up, these are
+// bytes a drive sent unprompted, or late replies; the next read transaction would
+// discard them anyway. After a failed read, they show what the MCB actually received
+// (e.g. an echo of its own request, or an out-of-step reply).
+static void ReportLinkBytes(const char * context, StorageManagerMCB & log)
 {
+	const int max_shown = 16;
+	char hex[3 * max_shown + 1] = "";
+	int count = 0;
+
+	while (MC1_SERIAL.available() > 0) {
+		int link_byte = MC1_SERIAL.read();
+		if (count < max_shown) snprintf(hex + 3 * count, 4, " %02X", link_byte);
+		count++;
+	}
+	if (0 == count) return;
+
+	char msg[140];
+	snprintf(msg, sizeof(msg), "Drive serial: %d bytes %s:%s%s",
+	         count, context, hex, (count > max_shown) ? " ..." : "");
+	log.LogSD(msg, ERR_DATA);
+}
+
+// Wakes the drive serial link before a command that may follow an idle gap. The MCB's
+// MAX3381E RS-232 transceiver auto-shuts down after ~30 s without activity (its
+// FORCEON/FORCEOFF control isn't used on MONDO boards) and can drop the first bytes of
+// the next command. The drive then holds a partial message that garbles that command.
+// Sending the Technosoft sync byte until the drive answers with one wakes the
+// transceiver and clears any partial message held by the drive. Unlike
+// Technosoft::Sync(), every wait is bounded. Returns true once the drive has answered.
+static bool WakeDriveLink(StorageManagerMCB & log)
+{
+	const int max_tries = 15;          // per the Technosoft manual, as Technosoft::Sync() uses
+	const uint32_t reply_wait_ms = 20; // a sync byte and its reply take ~2.3 ms at 9600 baud
+	char msg[64];
+
+	for (int attempt = 1; attempt <= max_tries; attempt++) {
+		MC1_SERIAL.flush(); // finish any transmission in progress
+		while (MC1_SERIAL.read() >= 0); // discard anything waiting
+		MC1_SERIAL.write((uint8_t) SYNC_BYTE);
+
+		uint32_t start_ms = millis();
+		while (millis() - start_ms < reply_wait_ms) {
+			if (MC1_SERIAL.available() > 0 && MC1_SERIAL.read() == SYNC_BYTE) {
+				// let any further replies arrive, then discard them so they can't be
+				// mistaken for the next command's acknowledgement
+				delay(5);
+				while (MC1_SERIAL.read() >= 0);
+				if (attempt > 1) {
+					// the first sync byte(s) went unanswered: the link was asleep or out of step
+					snprintf(msg, sizeof(msg), "Drive serial: link woke after %d sync tries", attempt);
+					log.LogSD(msg, ERR_DATA);
+				}
+				return true;
+			}
+		}
+	}
+
+	snprintf(msg, sizeof(msg), "Drive serial: no sync reply after %d tries", max_tries);
+	log.LogSD(msg, ERR_DATA);
+	return false;
+}
+
+// Starts a drive's control loops. Returns NULL on success, otherwise the step that failed.
+// SendEndInit/SetAxisOn can't detect an unresponsive drive (the Technosoft library's
+// write-only transaction turns its error codes into true), so after each one confirm
+// the drive answers a status read, and say how the read failed. Each command + status
+// read is timed: at 9600 baud a genuine exchange can't complete in under ~18 ms.
+template <class Drive>
+static const char * StartControlLoops(Drive & drive, const char * drive_name, StorageManagerMCB & log)
+{
+	static char loop_error[48];
+	char context[48];
+	char timing[80];
+	uint32_t start_ms = 0;
+	uint32_t endinit_ms = 0;
+	int ret = 0;
+
+	snprintf(context, sizeof(context), "waiting before %s start", drive_name);
+	ReportLinkBytes(context, log);
+
+	// the link may have been idle long enough for the serial transceiver to sleep; a
+	// failed wake is reported, and the status reads below then catch any real problem
+	WakeDriveLink(log);
+
+	start_ms = millis();
 	if (!drive.SendEndInit()) return "EndInit failed";
+	ret = drive.ProbeStatus();
+	endinit_ms = millis() - start_ms;
+	if (ret != 1) {
+		snprintf(timing, sizeof(timing), "%s start: EndInit+status %lu ms, status read failed", drive_name, endinit_ms);
+		log.LogSD(timing, ERR_DATA);
+		delay(50); // let any in-flight bytes arrive before dumping the link
+		snprintf(context, sizeof(context), "after %s status read failed", drive_name);
+		ReportLinkBytes(context, log);
+		snprintf(loop_error, sizeof(loop_error), "%s after EndInit", TechnosoftReadErrorName(ret));
+		return loop_error;
+	}
+
+	start_ms = millis();
 	if (!drive.SetAxisOn()) return "AxisOn failed";
+	ret = drive.ProbeStatus();
+	if (ret != 1) {
+		snprintf(timing, sizeof(timing), "%s start: EndInit+status %lu ms, AxisOn+status %lu ms, status read failed",
+		         drive_name, endinit_ms, millis() - start_ms);
+		log.LogSD(timing, ERR_DATA);
+		delay(50);
+		snprintf(context, sizeof(context), "after %s status read failed", drive_name);
+		ReportLinkBytes(context, log);
+		snprintf(loop_error, sizeof(loop_error), "%s after AxisOn", TechnosoftReadErrorName(ret));
+		return loop_error;
+	}
+
+	snprintf(timing, sizeof(timing), "%s start: EndInit+status %lu ms, AxisOn+status %lu ms",
+	         drive_name, endinit_ms, millis() - start_ms);
+	Serial.println(timing);
 	return NULL;
 }
 #endif
@@ -287,12 +399,23 @@ void MCB::PerformActions(void)
 #endif
 			}
 			break;
+#ifdef INST_RACHUTS
+		case ACT_BRAKE_ON:
+			if (reel_initialized) WakeDriveLink(storageManager); // may follow an idle gap
+			reel.BrakeOn();
+			break;
+		case ACT_BRAKE_OFF:
+			if (reel_initialized) {
+				WakeDriveLink(storageManager); // may follow an idle gap
+				reel.BrakeOff();
+#else
 		case ACT_BRAKE_ON:
 			reel.BrakeOn();
 			break;
 		case ACT_BRAKE_OFF:
 			if (reel_initialized) {
 				reel.BrakeOff();
+#endif
 			} else {
 				dibDriver.dibComm.TX_Error("Reel not initialized for brake");
 			}
@@ -610,13 +733,19 @@ bool MCB::ReelControllerOn(void)
 {
 	if (reel_initialized) {
 #ifdef INST_RACHUTS
-		if (const char * loop_error = StartControlLoops(reel)) {
+		if (const char * loop_error = StartControlLoops(reel, "reel", storageManager)) {
 #else
 		if (!reel.SendEndInit() || !reel.SetAxisOn()) {
 #endif
+#ifdef INST_RACHUTS
+			ReelControllerOff(); // also clears reel_initialized, so the next try re-syncs
+			action_queue.Push(ACT_SWITCH_READY);
+			storageManager.LogSD("Error starting reel control loops", ERR_DATA);
+#else
 			powerController.ReelOff();
 			action_queue.Push(ACT_SWITCH_READY);
 			storageManager.LogSD("Error starting reel control loops", ERR_DATA);
+#endif
 #ifdef INST_RACHUTS
 			snprintf(action_error, sizeof(action_error), "Error starting reel control loops: %s", loop_error);
 			dibDriver.dibComm.TX_Error(action_error);
@@ -655,7 +784,7 @@ bool MCB::ReelControllerOn(void)
 	delay(500);
 
 #ifdef INST_RACHUTS
-	if (const char * loop_error = StartControlLoops(reel)) {
+	if (const char * loop_error = StartControlLoops(reel, "reel", storageManager)) {
 #else
 	if (!reel.SendEndInit() || !reel.SetAxisOn()) {
 #endif
@@ -693,7 +822,7 @@ bool MCB::LevelWindControllerOn(void)
 
 	// start the drive control loops
 #ifdef INST_RACHUTS
-	if (const char * loop_error = StartControlLoops(levelWind)) {
+	if (const char * loop_error = StartControlLoops(levelWind, "level wind", storageManager)) {
 #else
 	if (!levelWind.SendEndInit() || !levelWind.SetAxisOn()) {
 #endif
@@ -711,12 +840,17 @@ bool MCB::LevelWindControllerOn(void)
 
 	// restart the reel drive control loops
 #ifdef INST_RACHUTS
-	if (const char * loop_error = StartControlLoops(reel)) {
+	if (const char * loop_error = StartControlLoops(reel, "reel", storageManager)) {
 #else
 	if (!reel.SendEndInit() || !reel.SetAxisOn()) {
 #endif
+#ifdef INST_RACHUTS
+		LevelWindControllerOff();
+		ReelControllerOff(); // also clears reel_initialized, so the next try re-syncs
+#else
 		powerController.LevelWindOff();
 		powerController.ReelOff();
+#endif
 		action_queue.Push(ACT_SWITCH_READY);
 		storageManager.LogSD("Error starting reel control loops", ERR_DATA);
 #ifdef INST_RACHUTS

@@ -147,21 +147,53 @@ bool Reel::CheckMotionParams(float num_revolutions, float speed, float acc) {
 	return true;
 }
 
+// Describes a Technosoft Read16BitRAM/Read32BitRAM return code
+const char * TechnosoftReadErrorName(int code)
+{
+	switch (code) {
+	case 1:   return "readback failed once"; // the diagnostic re-read worked
+	case -10: return "serial write failed";
+	case -11: return "no reply";
+	case -12: return "bad ack";
+	case -13: return "no data after ack";
+	case -14: return "port not initialized";
+	case -21: return "bad checksum";
+	case -4:  return "wrong axis reply";
+	case -6:  return "wrong register reply";
+	default:  return "bad reply";
+	}
+}
+
+int Reel::ProbeStatus(void) {
+	uint16_t status = 0;
+	return Read16BitRAM(STATUS_LO_R, &status);
+}
+
+// Writes a 32-bit controller register, verified by read-back (as
+// SetCommandPosition, SetSlewRate and SetAcceleration do). On failure,
+// last_error says which register and why.
+bool Reel::WriteRegister(uint16_t address, uint32_t value, const char * name) {
+	int ret = Write32BitRAM(address, value);
+	if (1 == ret) return true;
+
+	const char * reason = "write failed";
+	if (-4 == ret) {
+		reason = "readback mismatch"; // controller answered, but the write didn't take
+	} else if (-3 == ret) {
+		// Write32BitRAM doesn't say why the read-back failed, so read once more to find out
+		uint32_t readback = 0;
+		reason = TechnosoftReadErrorName(Read32BitRAM(address, &readback));
+	}
+	snprintf(last_error, sizeof(last_error), "controller rejected %s (%s)", name, reason);
+	return false;
+}
+
 // Sends an already-converted motion profile to the controller and starts it.
 // On failure, last_error names the step that failed.
 bool Reel::CommandMotion(uint32_t num_units, uint32_t fixed_speed, uint32_t fixed_acc) {
-	if (!SetCommandPosition(num_units)) {
-		snprintf(last_error, sizeof(last_error), "controller rejected position");
-		return false;
-	}
-	if (!SetSlewRate(fixed_speed)) {
-		snprintf(last_error, sizeof(last_error), "controller rejected speed");
-		return false;
-	}
-	if (!SetAcceleration(fixed_acc)) {
-		snprintf(last_error, sizeof(last_error), "controller rejected acc");
-		return false;
-	}
+	if (!WriteRegister(CPOS_P, num_units, "position")) return false;
+	if (!WriteRegister(CSPD_P, fixed_speed, "speed")) return false;
+	if (!WriteRegister(CACC_P, fixed_acc, "acc")) return false;
 	if (!CallFunction(REEL_VARIABLE_R)) {
 		snprintf(last_error, sizeof(last_error), "controller rejected motion call");
 		return false;

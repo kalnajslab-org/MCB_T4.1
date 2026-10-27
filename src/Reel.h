@@ -160,14 +160,24 @@ public:
 
 	// reason the last ReelIn/ReelOut was rejected, for inclusion in error TM
 	char last_error[64] = "";
+
+	// reads the drive status register to check the drive answers;
+	// returns the Technosoft read code (1 = OK, see TechnosoftReadErrorName)
+	int ProbeStatus(void);
 #endif
 private:
 #ifdef INST_RACHUTS
 	bool CheckMotionParams(float num_revolutions, float speed, float acc);
 	bool CommandMotion(uint32_t num_units, uint32_t fixed_speed, uint32_t fixed_acc);
+	bool WriteRegister(uint16_t address, uint32_t value, const char * name);
 #endif
 	int32_t pending_position = 0;
 	StorageManagerMCB storageManager; // supports multiple objects
 };
+
+#ifdef INST_RACHUTS
+// describes a Technosoft Read16BitRAM/Read32BitRAM return code
+const char * TechnosoftReadErrorName(int code);
+#endif
 
 #endif
